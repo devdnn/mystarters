@@ -1,0 +1,30 @@
+# .wslconfig: Global WSL configuration file for Windows,
+# placed in the Windows user directory (e.g., C:\Users\<YourUsername>\.wslconfig)
+
+# Example configuration options:
+# [wsl2]
+# memory=4GB # Limits the amount of memory available to WSL 2
+# processors=2 # Limits the number of processors available to WSL 2
+# swap=8GB # Sets the size of the swap file
+# localhostForwarding=true # Enables or disables localhost forwarding
+
+[wsl2]
+memory=4GB
+processors=2
+swap=8GB
+localhostForwarding=true
+
+# Network configuration in WSL 2
+# Default is nat
+# nat - This is the default network configuration for WSL 2.
+# mirrored - user the same network configuration as the host, allowing WSL 2 to access the same network resources as Windows.
+# bridged - creates a virtual network interface that allows WSL 2 to communicate with the
+# host network directly, similar to how a virtual machine would operate.
+networkingMode=nat
+
+dhcp=true # Enable DHCP for WSL 2
+ipv6=true # Enable IPv6 support in WSL 2
+localhostForwarding=true # Enable localhost forwarding for WSL 2
+dnsProxy=true # Enable DNS proxy for WSL 2, default is true
+dnsTunneling=true # Enable DNS tunneling for WSL 2, default is true
+guiApplications=true # Enable GUI applications support in WSL 2, default is true
