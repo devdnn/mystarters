@@ -1,5 +1,6 @@
 {
-    "cSpell.words": [
-        "tfvars"
-    ]
+  "cSpell.words": [
+    "shellcheck",
+    "tfvars"
+  ]
 }

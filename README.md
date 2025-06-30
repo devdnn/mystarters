@@ -17,8 +17,7 @@ A collection of scripts to bootstrap development environments and project struct
 ## Scripts
 
 - **Ansible**: Setup Ansible environment
-- **Terraform**: Setup Terraform environment  
+- **Terraform**: Setup Terraform environment
 - **Dotfiles**: Clone and setup dotfiles
 - **System**: OS-specific setup scripts
 - **Utils**: Utility scripts for project creation
-
