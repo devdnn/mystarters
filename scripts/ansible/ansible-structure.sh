@@ -4,27 +4,27 @@
 # Check if an argument is provided for the base directory; if not, use the current directory
 baseDir="${1:-$(pwd)}"
 
-echo "Creating directory structure in: $baseDir"
+echo "Creating directory structure in: ${baseDir}"
 
 # Create directory structure
 echo "Creating directory structure..."
-mkdir -p $baseDir/{inventory/group_vars,inventory/host_vars,roles/common/{tasks,handlers,defaults,vars},playbooks}
+mkdir -p "${baseDir}/{inventory/group_vars,inventory/host_vars,roles/common/{tasks,handlers,defaults,vars},playbooks}"
 
 # Create empty main.yml files for handlers, defaults, and vars in both roles
-touch $baseDir/roles/common/handlers/main.yml
-touch $baseDir/roles/common/defaults/main.yml
-touch $baseDir/roles/common/vars/main.yml
+touch "${baseDir}/roles/common/handlers/main.yml"
+touch "${baseDir}/roles/common/defaults/main.yml"
+touch "${baseDir}/roles/common/vars/main.yml"
 
 # Create inventory file
-echo "[developers]" > $baseDir/inventory/hosts
-echo "developer01 ansible_host=192.168.1.100" >> $baseDir/inventory/hosts
+echo "[developers]" > "${baseDir}/inventory/hosts"
+echo "developer01 ansible_host=192.168.1.100" >> "${baseDir}/inventory/hosts"
 
 # Create group_vars and host_vars
-echo "ansible_user: dnndev" > $baseDir/inventory/group_vars/developers.yml
-echo "ansible_ssh_private_key_file: ~/.ssh/id_rsa" > $baseDir/inventory/host_vars/developer01.yml
+echo "ansible_user: dnndev" > "${baseDir}/inventory/group_vars/developers.yml"
+echo "ansible_ssh_private_key_file: ~/.ssh/id_rsa" > "${baseDir}/inventory/host_vars/developer01.yml"
 
 # Common role tasks creation
-cat <<EOF > $baseDir/roles/common/tasks/main.yml
+cat <<EOF > "${baseDir}/roles/common/tasks/main.yml"
 - name: Update and upgrade apt packages
   ansible.builtin.apt:
     update_cache: yes
@@ -32,7 +32,7 @@ cat <<EOF > $baseDir/roles/common/tasks/main.yml
 EOF
 
 # Playbooks creation
-cat <<EOF > $baseDir/playbooks/setup_common.yml
+cat <<EOF > "${baseDir}/playbooks/setup_common.yml"
 - name: Setup Common System Components
   hosts: all
   become: yes
@@ -42,7 +42,7 @@ cat <<EOF > $baseDir/playbooks/setup_common.yml
 EOF
 
 # ansible.cfg creation
-cat <<EOF > $baseDir/ansible.cfg
+cat <<EOF > "${baseDir}/ansible.cfg"
 [defaults]
 nocows = True
 roles_path = ./roles:/etc/ansible/roles
