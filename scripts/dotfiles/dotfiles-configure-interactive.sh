@@ -5,7 +5,7 @@
 set -eu
 
 # Accept values from environment or default to empty
-LASTPASS_LOGIN_USER="${LASTPASS_LOGIN_USER:-deepakn.dev@gmail.com}"
+LASTPASS_LOGIN_USER="${LASTPASS_LOGIN_USER:-deepak483@gmail.com}"
 SSH_KEY_PREFIX="${SSH_KEY_PREFIX:-ssh_personal_github_ed25519}"
 DOTFILES_REPO_COMPLETE_URL="${DOTFILES_REPO_COMPLETE_URL:-git@github.com:devdnn/dotfiles.git}"
 
