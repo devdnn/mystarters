@@ -8,7 +8,9 @@ echo "Creating directory structure in: ${baseDir}"
 
 # Create directory structure
 echo "Creating directory structure..."
-mkdir -p "${baseDir}/{inventory/group_vars,inventory/host_vars,roles/common/{tasks,handlers,defaults,vars},playbooks}"
+mkdir -p ${baseDir}/inventory/{group_vars,host_vars} \
+         ${baseDir}/roles/common/{tasks,handlers,defaults,vars} \
+         ${baseDir}/playbooks
 
 # Create empty main.yml files for handlers, defaults, and vars in both roles
 touch "${baseDir}/roles/common/handlers/main.yml"
