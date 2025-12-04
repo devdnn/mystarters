@@ -4,7 +4,7 @@ Clones a WSL instance from an exported tarball.
 
 .DESCRIPTION
 This script imports a new WSL instance from a specified tarball, sets up a workspace,
-installs a backup script, and configures a cron job for automatic bac
+installs a backup script, and configures a cron job for automatic backups.
 .PARAMETER NewInstance
 The desired name for the new WSL instance.
 
@@ -32,7 +32,7 @@ Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content `
     -SourceDir '$HOME/wrkspc/_code'
 #>
 param(
-    [s    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory=$true)]
     [string]$NewInstance,
 
     [Parameter(Mandatory=$true)]
@@ -46,7 +46,8 @@ param(
 
     [Parameter(Mandatory=$true)]
     [string]$SourceDir
-ariables
+)
+
 $InstallPath    = Join-Path -Path $InstallBasePath -ChildPath $NewInstance
 $BackupScript   = @"
 #!/bin/bash
@@ -85,4 +86,3 @@ Write-Host "Configuring cron job..."
 wsl -d $NewInstance -- bash -c "(crontab -l 2>/dev/null; echo '*/10 * * * * \$HOME/backup_repos.sh') | crontab -"
 
 Write-Host "Setup complete! Your WSL clone is ready with auto-backup cron."
-Setup complete! Your WSL clone is ready with auto-backup cron."
