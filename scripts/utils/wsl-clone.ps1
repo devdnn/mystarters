@@ -17,6 +17,9 @@
 .PARAMETER SourceDir
     WSL path to backup (git repos).
 
+.PARAMETER User
+    WSL user to run commands as and set up cron for (default: root).
+
 .PARAMETER BackupIntervalMinutes
     Backup cron interval in minutes (default: 10).
 
@@ -35,7 +38,8 @@
         ExportPath      = "D:\wsl\exports\debian-basic.tar"
         InstallBasePath = "D:\wsl\instances"
         BackupDir       = "/mnt/d/wsl/backups"
-        SourceDir       = '$HOME/code'
+        SourceDir       = '/home/devuser/code'
+        User            = "devuser"
     }
     $url = "https://raw.githubusercontent.com/devdnn/mystarters/main/scripts/utils/wsl-clone.ps1"
     & ([scriptblock]::Create((Invoke-WebRequest -Uri $url -UseBasicParsing).Content)) @params
@@ -47,6 +51,7 @@ param(
     [Parameter(Mandatory)][string]$InstallBasePath,
     [Parameter(Mandatory)][string]$BackupDir,
     [Parameter(Mandatory)][string]$SourceDir,
+    [string]$User = "root",
     [int]$BackupIntervalMinutes = 10,
     [switch]$Force
 )
@@ -78,9 +83,20 @@ Write-Host "Importing WSL instance '$NewInstance'..." -ForegroundColor Cyan
 wsl --import $NewInstance $InstallPath $ExportPath --version 2
 if ($LASTEXITCODE -ne 0) { throw "Failed to import WSL instance" }
 
+# Set default user for the instance
+if ($User -ne "root") {
+    Write-Host "Setting default user to '$User'..." -ForegroundColor Cyan
+    # Create /etc/wsl.conf to set default user
+    $wslConf = "[user]`ndefault=$User"
+    wsl -d $NewInstance -- bash -c "echo -e '$wslConf' > /etc/wsl.conf"
+}
+
+# Get user's home directory
+$userHome = if ($User -eq "root") { "/root" } else { "/home/$User" }
+
 # Create workspace
 Write-Host "Creating workspace..." -ForegroundColor Cyan
-wsl -d $NewInstance -- bash -c "mkdir -p '$SourceDir'"
+wsl -d $NewInstance -u $User -- bash -c "mkdir -p '$SourceDir'"
 
 # Create and install backup script
 $backupScript = @"
@@ -97,17 +113,18 @@ Write-Host "Installing backup script..." -ForegroundColor Cyan
 $tempFile = [IO.Path]::GetTempFileName()
 $backupScript | Set-Content $tempFile -NoNewline
 $wslTemp = (wsl wslpath -u "'$tempFile'").Trim()
-wsl -d $NewInstance -- bash -c "cp $wslTemp ~/backup_repos.sh && chmod +x ~/backup_repos.sh"
+wsl -d $NewInstance -u $User -- bash -c "cp $wslTemp $userHome/backup_repos.sh && chmod +x $userHome/backup_repos.sh"
 Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
 
 # Configure cron
-Write-Host "Configuring cron job..." -ForegroundColor Cyan
-$cronCmd = "(crontab -l 2>/dev/null | grep -v backup_repos.sh; echo '*/$BackupIntervalMinutes * * * * `$HOME/backup_repos.sh') | crontab -"
-wsl -d $NewInstance -- bash -c $cronCmd
+Write-Host "Configuring cron job for user '$User'..." -ForegroundColor Cyan
+$cronCmd = "(crontab -l 2>/dev/null | grep -v backup_repos.sh; echo '*/$BackupIntervalMinutes * * * * $userHome/backup_repos.sh') | crontab -"
+wsl -d $NewInstance -u $User -- bash -c $cronCmd
 
 # Done
 Write-Host "`nSetup complete!" -ForegroundColor Green
 Write-Host "  Instance:  $NewInstance"
+Write-Host "  User:      $User"
 Write-Host "  Workspace: $SourceDir"
 Write-Host "  Backups:   $BackupDir (every $BackupIntervalMinutes min)"
 Write-Host "`nStart with: wsl -d $NewInstance" -ForegroundColor Cyan
