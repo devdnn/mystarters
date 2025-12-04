@@ -86,13 +86,30 @@ if ($LASTEXITCODE -ne 0) { throw "Failed to import WSL instance" }
 # Set default user for the instance
 if ($User -ne "root") {
     Write-Host "Setting default user to '$User'..." -ForegroundColor Cyan
-    # Create /etc/wsl.conf to set default user
-    $wslConf = "[user]`ndefault=$User"
-    wsl -d $NewInstance -- bash -c "echo -e '$wslConf' > /etc/wsl.conf"
 }
 
 # Get user's home directory
 $userHome = if ($User -eq "root") { "/root" } else { "/home/$User" }
+
+# Create /etc/wsl.conf to set default user and preferences
+Write-Host "Configuring WSL instance..." -ForegroundColor Cyan
+$wslConf = @"
+[user]
+default=$User
+
+[interop]
+appendWindowsPath=false
+
+[automount]
+enabled=true
+options="metadata"
+
+[boot]
+command=cd ~
+"@
+wsl -d $NewInstance -- bash -c "cat > /etc/wsl.conf << 'EOF'
+$wslConf
+EOF"
 
 # Create workspace
 Write-Host "Creating workspace..." -ForegroundColor Cyan
@@ -127,4 +144,4 @@ Write-Host "  Instance:  $NewInstance"
 Write-Host "  User:      $User"
 Write-Host "  Workspace: $SourceDir"
 Write-Host "  Backups:   $BackupDir (every $BackupIntervalMinutes min)"
-Write-Host "`nStart with: wsl -d $NewInstance" -ForegroundColor Cyan
+Write-Host "`nStart with: wsl -d $NewInstance --cd ~" -ForegroundColor Cyan
