@@ -22,7 +22,7 @@ Directory inside WSL to backup.
 
 .USAGE
 # Copy# Copy and paste this block into PowerShell to run the script:
-ptUrl = "https://raw.githubusercontent.com/devdnn/mystarters/main/scripts/utils/wsl-clone.ps1" # Replace with actual raw URL if different
+scriptUrl = "https://raw.githubusercontent.com/devdnn/mystarters/main/scripts/utils/wsl-clone.ps1" # Replace with actual raw URL if different
 
 Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content `
     -NewInstance "sample" `
