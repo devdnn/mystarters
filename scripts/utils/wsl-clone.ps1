@@ -101,6 +101,9 @@ if (-not $debianInstalled) {
     }
 }
 
+# Create install directory
+New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
+
 # Validate InstallBasePath is writable
 try {
     $testFile = Join-Path $InstallPath ".write_test"
@@ -109,9 +112,6 @@ try {
 } catch {
     throw "Cannot write to InstallBasePath '$InstallBasePath': $_"
 }
-
-# Create install directory
-New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
 
 # Handle existing instance
 $existing = $distros | Where-Object { $_ -ieq $NewInstance }
@@ -141,10 +141,10 @@ $importStatus = $LASTEXITCODE
 Remove-Item $tempTar -ErrorAction SilentlyContinue
 if ($importStatus -ne 0) { throw "Failed to import WSL instance" }
 
-# Ensure required packages (sudo, git, cron) are installed
-Write-Host "Ensuring sudo, git, and cron are installed in '$NewInstance'..." -ForegroundColor Cyan
-wsl -d $NewInstance -u root -- bash -c "apt-get update && apt-get install -y sudo git cron"
-if ($LASTEXITCODE -ne 0) { throw "Failed to install required packages (sudo, git, cron)" }
+# Ensure required packages (sudo, git, cron, openssl) are installed
+Write-Host "Ensuring sudo, git, cron, and openssl are installed in '$NewInstance'..." -ForegroundColor Cyan
+wsl -d $NewInstance -u root -- bash -c "apt-get update && apt-get install -y sudo git cron openssl"
+if ($LASTEXITCODE -ne 0) { throw "Failed to install required packages (sudo, git, cron, openssl)" }
 
 # Handle user configuration
 if ($User -ne "root") {
@@ -163,18 +163,19 @@ if ($User -ne "root") {
         [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
 
         Write-Host "Setting password..." -ForegroundColor Cyan
-        $encryptedPassword = $plainPassword | openssl passwd -stdin
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($encryptedPassword)) {
+        $encryptedPassword = $plainPassword | wsl -d $NewInstance -u root -- bash -lc "openssl passwd -6 -stdin"
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($encryptedPassword)) {
             $plainPassword = $null
             throw "Failed to encrypt password"
         }
-        wsl -d $NewInstance -u root -- bash -c "echo '$safeUser:$encryptedPassword' | chpasswd -e"
+        $encryptedPassword = $encryptedPassword.Trim()
+        wsl -d $NewInstance -u root -- bash -c "echo '$($safeUser):$encryptedPassword' | chpasswd -e"
         $plainPassword = $null
         if ($LASTEXITCODE -ne 0) { throw "Failed to set password for user '$User'" }
 
         # Configure sudo for automated setup - restrict to specific commands needed by install-tools.sh
-        # install-tools.sh needs: apt-get, curl, git, brew, npm, bash (for nvm)
-        $sudoersLine = "$User ALL=(ALL) NOPASSWD:/usr/bin/apt-get,/usr/bin/curl,/usr/bin/git,/usr/bin/bash,/usr/bin/sh"
+        # install-tools.sh needs: apt-get, curl, git, install, gpg, chsh, bash (for nvm)
+        $sudoersLine = "$User ALL=(ALL) NOPASSWD:/usr/bin/apt-get,/usr/bin/curl,/usr/bin/git,/usr/bin/install,/usr/bin/gpg,/usr/bin/chsh,/usr/bin/bash,/usr/bin/sh"
         wsl -d $NewInstance -u root -- bash -c "echo '$($sudoersLine -replace '\$','\\\$')' > /etc/sudoers.d/$safeUser && chmod 0440 /etc/sudoers.d/$safeUser"
         if ($LASTEXITCODE -ne 0) { throw "Failed to configure sudo for user '$User'" }
     }

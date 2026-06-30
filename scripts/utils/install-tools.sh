@@ -30,6 +30,20 @@ check_command() {
     return 0
 }
 
+run_install_cmd() {
+    local description="$1"
+    shift
+    local output
+    output="$("$@" 2>&1)"
+    local status=$?
+    if [ $status -ne 0 ]; then
+        echo "$output"
+        report_failure "$description" $status
+        return $status
+    fi
+    return 0
+}
+
 #region Script Header
 
 detect_os() {
@@ -63,16 +77,16 @@ SUDO_CMD=""
 if [ "$OS" = "macOS" ]; then
     if ! command -v git &>/dev/null; then
         echo "[INSTALL] git..."
-        if ! brew install git; then
-            report_failure "brew install git" $?
+        if run_install_cmd "brew install git" brew install git; then
+            echo "[DONE] git installed"
         fi
     else
         echo "[SKIP] git already installed"
     fi
     if ! command -v curl &>/dev/null; then
         echo "[INSTALL] curl..."
-        if ! brew install curl; then
-            report_failure "brew install curl" $?
+        if run_install_cmd "brew install curl" brew install curl; then
+            echo "[DONE] curl installed"
         fi
     else
         echo "[SKIP] curl already installed"
@@ -80,10 +94,8 @@ if [ "$OS" = "macOS" ]; then
 else
     echo "[INSTALL] apt packages (ca-certificates, curl, git, build-essential)..."
     export DEBIAN_FRONTEND=noninteractive
-    $SUDO_CMD apt-get update -qq 2>&1 | grep -E "^(E:|W:)" || true
-    if ! $SUDO_CMD apt-get install -y -qq ca-certificates curl git gpg build-essential; then
-        report_failure "apt-get install essentials" $?
-    else
+    run_install_cmd "apt-get update essentials" $SUDO_CMD apt-get update -qq || true
+    if run_install_cmd "apt-get install essentials" $SUDO_CMD apt-get install -y -qq ca-certificates curl git gpg build-essential; then
         echo "[DONE] System essentials installed"
     fi
 fi
@@ -111,18 +123,19 @@ if command -v zsh &>/dev/null; then
 else
     if [ "$OS" = "macOS" ]; then
         echo "[INSTALL] Zsh via Homebrew..."
-        if brew install zsh 2>&1 | grep -E "^Error:"; then
-            report_failure "brew install zsh" $?
+        zsh_output=$(brew install zsh 2>&1)
+        zsh_status=$?
+        if [ $zsh_status -ne 0 ]; then
+            echo "$zsh_output"
+            report_failure "brew install zsh" $zsh_status
         else
             zsh_installed=true
             echo "[DONE] Zsh installed"
         fi
     else
         echo "[INSTALL] Zsh via apt..."
-        $SUDO_CMD apt-get update -qq 2>&1 | grep -E "^(E:|W:)" || true
-        if $SUDO_CMD apt-get install -y -qq zsh 2>&1 | grep -E "^(E:|W:)"; then
-            report_failure "apt-get install zsh" $?
-        else
+        run_install_cmd "apt-get update zsh" $SUDO_CMD apt-get update -qq || true
+        if run_install_cmd "apt-get install zsh" $SUDO_CMD apt-get install -y -qq zsh; then
             zsh_installed=true
             echo "[DONE] Zsh installed"
         fi
@@ -182,7 +195,7 @@ if ! command -v node &>/dev/null; then
     if [ ! -d "$NVM_DIR" ]; then
         echo "[INFO] NVM_DIR not found, downloading nvm installer..."
         nvm_install_script=$(mktemp)
-        nvm_install_sha256="7b2a0d007f8ed30d8fe4d93a0e6f5e60e1e2c6d8e4c5c8e4e6a8e0c4e6a8e0c4"
+        nvm_install_sha256="bdea8c52186c4dd12657e77e7515509cda5bf9fa5a2f0046bce749e62645076d"
 
         if ! curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh -o "$nvm_install_script" 2>/dev/null; then
             echo "[FAIL] Failed to download nvm installer"
@@ -191,13 +204,22 @@ if ! command -v node &>/dev/null; then
         else
             actual_sha256=$(sha256sum "$nvm_install_script" 2>/dev/null | cut -d' ' -f1 || echo "unavailable")
             echo "[DEBUG] Downloaded nvm installer, SHA256: $actual_sha256"
-            rm -f "$nvm_install_script"
-
-            echo "[INFO] Running nvm installer (curl | bash)..."
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash > /dev/null 2>&1
-            if [ -s "$NVM_DIR/nvm.sh" ]; then
-                . "$NVM_DIR/nvm.sh"
-                nvm_loaded=true
+            if [ "$actual_sha256" != "$nvm_install_sha256" ]; then
+                echo "[FAIL] nvm installer checksum mismatch"
+                rm -f "$nvm_install_script"
+                track_failure
+            else
+                echo "[INFO] Running nvm installer from local file..."
+                if bash "$nvm_install_script" > /dev/null 2>&1; then
+                    if [ -s "$NVM_DIR/nvm.sh" ]; then
+                        . "$NVM_DIR/nvm.sh"
+                        nvm_loaded=true
+                    fi
+                else
+                    echo "[FAIL] nvm installer failed"
+                    track_failure
+                fi
+                rm -f "$nvm_install_script"
             fi
         fi
     fi
@@ -275,8 +297,11 @@ if command -v pwsh &>/dev/null; then
 else
     if [ "$OS" = "macOS" ]; then
         echo "[INSTALL] PowerShell via Homebrew..."
-        if brew install powershell 2>&1 | grep -E "^Error:"; then
-            report_failure "brew install powershell" $?
+        pwsh_output=$(brew install powershell 2>&1)
+        pwsh_status=$?
+        if [ $pwsh_status -ne 0 ]; then
+            echo "$pwsh_output"
+            report_failure "brew install powershell" $pwsh_status
         else
             echo "[DONE] PowerShell installed"
         fi
@@ -309,19 +334,23 @@ else
 
         if [ ! -f "$ms_repo_file" ]; then
             echo "[INFO] Adding Microsoft apt repository..."
-            if ! curl -fsSL https://packages.microsoft.com/config/debian/12/prod.list -o "$ms_repo_file" 2>/dev/null; then
+            temp_repo=$(mktemp)
+            if ! curl -fsSL https://packages.microsoft.com/config/debian/12/prod.list -o "$temp_repo" 2>/dev/null; then
                 echo "[FAIL] Failed to download Microsoft repo config"
+                rm -f "$temp_repo"
                 track_failure
             else
-                $SUDO_CMD tee "$ms_repo_file" < /dev/null > /dev/null 2>&1 || true
+                if ! $SUDO_CMD install -m 0644 "$temp_repo" "$ms_repo_file" 2>/dev/null; then
+                    echo "[FAIL] Failed to install Microsoft repo config"
+                    track_failure
+                fi
+                rm -f "$temp_repo"
             fi
         fi
 
         if [ -f "$ms_gpg_key" ] && [ -f "$ms_repo_file" ]; then
-            $SUDO_CMD apt-get update -qq 2>&1 | grep -E "^(E:|W:)" || true
-            if $SUDO_CMD apt-get install -y -qq powershell 2>&1 | grep -E "^(E:|W:)"; then
-                report_failure "apt-get install powershell" $?
-            else
+            run_install_cmd "apt-get update powershell" $SUDO_CMD apt-get update -qq || true
+            if run_install_cmd "apt-get install powershell" $SUDO_CMD apt-get install -y -qq powershell; then
                 echo "[DONE] PowerShell installed"
             fi
         else

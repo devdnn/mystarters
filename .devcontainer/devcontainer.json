@@ -17,13 +17,12 @@
 		"ghcr.io/devcontainers/features/powershell:2": {
 			"version": "latest"
 		},
-		"ghcr.io/devcontainer-config/features/dot-config:4": {},
 		"ghcr.io/devcontainers/features/copilot-cli:1": {},
 		"ghcr.io/aqua/devcontainer-antigravity-cli/antigravity-cli:1": {},
 		"ghcr.io/devcontainers/features/github-cli:1": {},
 		"ghcr.io/devcontainers/features/node:2": {},
 		"ghcr.io/devcontainers-extra/features/npm-packages:1": {
-			"packages": "opencode-ai,@fission-ai/openspec@latest"
+			"packages": "opencode-ai,@fission-ai/openspec@latest,@earendil-works/pi-coding-agent"
 		}
 	}
 }
