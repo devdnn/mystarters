@@ -1,0 +1,49 @@
+schema: spec-driven
+
+context: |
+  Tech stack: 
+  FILL_HERE
+  FILL_HERE
+
+  ## Coding Standards
+  Need regions to allow folding of code blocks in IDEs
+  FILL_HERE
+
+
+  ## Commenting Standards
+  Need 2 line file header comments with description of file purpose
+  Prefer block comments for multi-line comments
+  Need to use docstring style comments for functions and classes
+  Need inline comments for medium to complex code blocks
+
+  rules:
+    proposal:
+      - Use the grill-with-docs skill when available to stress-test the proposal and address potential concerns.
+      - Keep proposals under 1000 words
+      - Always include "Functional" and "Non-Functional Requirements" section
+      - Always include a "Non-goals" section
+      - Always include "Rollback Plan" section
+    tasks:
+      - Break into chunks that can be independently tested
+      - For each task, include a depends on task number and blocks other task numbers, if applicable
+      - Include task dependency graph showing which tasks are blocked by others and which tasks block other tasks
+      - Identify tasks that can run in parallel
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
